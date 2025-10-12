@@ -15,7 +15,8 @@ class HeaderLoader {
             'main-pustakana.html': 'main-pustakana',
             'password-manager.html': 'password-manager',
             'main-proposal.html': 'proposal',
-            'contact.html': 'contact'
+            'contact.html': 'contact',
+            'index.html': 'main-content' // Default untuk index
         };
         
         return pageMap[filename] || 'main-content';
@@ -27,12 +28,6 @@ class HeaderLoader {
         const userInfo = sessionStorage.getItem('user_info');
         const isLoggedIn = !!(idToken && userInfo);
         
-        // Debug logging
-        console.log('Login Status Check:', {
-            idToken: !!idToken,
-            userInfo: !!userInfo,
-            isLoggedIn: isLoggedIn
-        });
         
         return isLoggedIn;
     }
@@ -69,9 +64,13 @@ class HeaderLoader {
 
     setActivePage() {
         const navLinks = document.querySelectorAll('.nav-link');
+        
         navLinks.forEach(link => {
             const pageId = link.getAttribute('data-page');
-            if (pageId === this.currentPage) {
+            const href = link.getAttribute('href');
+            
+            // Check both data-page attribute and href for better compatibility
+            if (pageId === this.currentPage || href === this.getCurrentPageFilename()) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
@@ -81,16 +80,15 @@ class HeaderLoader {
         // Show/hide login/logout buttons based on login status
         this.updateLoginButtons();
     }
+    
+    getCurrentPageFilename() {
+        const path = window.location.pathname;
+        return path.split('/').pop();
+    }
 
     updateLoginButtons() {
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
-        
-        console.log('Updating login buttons:', {
-            loginBtn: !!loginBtn,
-            logoutBtn: !!logoutBtn,
-            isLoggedIn: this.isLoggedIn
-        });
         
         if (this.isLoggedIn) {
             if (loginBtn) loginBtn.style.display = 'none';
@@ -98,12 +96,6 @@ class HeaderLoader {
         } else {
             if (loginBtn) loginBtn.style.display = 'inline-block';
             if (logoutBtn) logoutBtn.style.display = 'none';
-        }
-        
-        // For testing - always show logout button
-        if (logoutBtn) {
-            logoutBtn.style.display = 'inline-block';
-            console.log('Logout button should be visible now');
         }
     }
 
@@ -158,12 +150,26 @@ class HeaderLoader {
         
         navLinks.forEach(link => {
             const href = link.getAttribute('href');
-            if (href === currentPage) {
+            const pageId = link.getAttribute('data-page');
+            
+            if (href === currentPage || pageId === this.getPageIdFromFilename(currentPage)) {
                 link.classList.add('active');
             } else {
                 link.classList.remove('active');
             }
         });
+    }
+    
+    getPageIdFromFilename(filename) {
+        const pageMap = {
+            'main-content.html': 'main-content',
+            'main-pustakana.html': 'main-pustakana',
+            'password-manager.html': 'password-manager',
+            'main-proposal.html': 'proposal',
+            'contact.html': 'contact',
+            'index.html': 'main-content'
+        };
+        return pageMap[filename] || 'main-content';
     }
 
     // Navigation functions for iframe
@@ -199,11 +205,36 @@ class HeaderLoader {
             `;
         }
     }
+    
+    // Public method to manually update active page
+    updateActivePage() {
+        this.currentPage = this.getCurrentPage();
+        this.setActivePage();
+    }
+    
+    // Public method to set specific page as active
+    setSpecificPageActive(pageId) {
+        this.currentPage = pageId;
+        this.setActivePage();
+    }
+    
+    // Cleanup method to prevent memory leaks
+    cleanup() {
+        if (this.urlObserver) {
+            this.urlObserver.disconnect();
+        }
+        if (this.inactivityTimer) {
+            clearTimeout(this.inactivityTimer);
+        }
+    }
 }
 
 // Initialize header loader when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     const headerLoader = new HeaderLoader();
+    
+    // Make headerLoader available globally
+    window.headerLoader = headerLoader;
     
     // Check if we're in iframe context (header-component.html)
     if (window.parent !== window) {
@@ -216,5 +247,49 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         // We're in main page, load header normally
         headerLoader.loadHeader();
+        
+        // Listen for URL changes (for SPA or dynamic navigation)
+        let currentUrl = window.location.href;
+        
+        // Use a more efficient approach with MutationObserver
+        headerLoader.urlObserver = new MutationObserver(() => {
+            if (window.location.href !== currentUrl) {
+                currentUrl = window.location.href;
+                
+                // Update current page and refresh active state
+                headerLoader.currentPage = headerLoader.getCurrentPage();
+                headerLoader.setActivePage();
+            }
+        });
+        
+        // Observe changes to the document title (which often changes with navigation)
+        headerLoader.urlObserver.observe(document, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['title']
+        });
+        
+        // Listen for popstate events (back/forward button)
+        window.addEventListener('popstate', () => {
+            headerLoader.currentPage = headerLoader.getCurrentPage();
+            headerLoader.setActivePage();
+        });
+        
+        // Listen for navigation events (if using custom navigation)
+        window.addEventListener('navigate', (event) => {
+            headerLoader.currentPage = headerLoader.getCurrentPage();
+            headerLoader.setActivePage();
+        });
+        
+        // Cleanup when page is about to unload (avoid permissions policy violation)
+        window.addEventListener('pagehide', () => {
+            headerLoader.cleanup();
+        });
+        
+        // Alternative cleanup for older browsers
+        window.addEventListener('beforeunload', () => {
+            headerLoader.cleanup();
+        });
     }
 });

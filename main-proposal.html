@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Permissions-Policy" content="unload=(), beforeunload=()">
     <title>Pustakana</title>
     <!-- Tempel gambar img.png di tampilan -->
     <link rel="icon" type="image/png" href="img.png">
@@ -1545,7 +1546,6 @@
                 // Redirect to login page
                 window.location.href = 'index.html';
             } catch (error) {
-                console.error('Error during logout:', error);
             }
         }
 
@@ -1644,7 +1644,6 @@
                 
                 return true;
             } catch (error) {
-                console.error('❌ Error inisialisasi Firebase:', error);
                 showError('Gagal menginisialisasi Firebase: ' + error.message);
                 return false;
             }
@@ -1673,7 +1672,6 @@
                 
                 return true;
             } catch (error) {
-                console.error('❌ Error checking session:', error);
                 clearSession();
                 redirectToLogin();
                 return false;
@@ -1711,7 +1709,6 @@
         
         // Show error message
         function showError(message) {
-            console.error('❌ Error:', message);
             alert('❌ Error: ' + message);
         }
         
@@ -1846,11 +1843,9 @@
                         
                         researchRef.set(sampleData).then(() => {
                         }).catch((error) => {
-                            console.error('❌ Error adding sample data:', error);
                         });
                     }
                 }).catch((error) => {
-                    console.error('❌ Error checking initial data:', error);
                 });
                 
                 // Now try to load data with listener
@@ -1867,17 +1862,14 @@
                         
                         hideLoading();
                     } catch (error) {
-                        console.error('❌ Error loading data:', error);
                         showError('Gagal memuat data: ' + error.message);
                         hideLoading();
                     }
                 }, (error) => {
-                    console.error('❌ Firebase error:', error);
                     showError('Error koneksi database: ' + error.message);
                     hideLoading();
                 });
             }).catch((error) => {
-                console.error('❌ Database connection test failed:', error);
                 showError('Gagal menguji koneksi database: ' + error.message);
                 hideLoading();
             });
@@ -1911,7 +1903,6 @@
                     showResearchModal('add');
                 });
             } else {
-                console.error('Add research button not found');
             }
             
             if (closeResearchModal) closeResearchModal.addEventListener('click', hideResearchModal);
@@ -1972,7 +1963,6 @@
                                 hideResearchModal();
                             })
                             .catch((error) => {
-                                console.error("❌ Error updating document: ", error);
                                 showToast('Error memperbarui penelitian: ' + error.message, 'error');
                             });
                     } else { // Add new data
@@ -1984,7 +1974,6 @@
                                 hideResearchModal();
                             })
                             .catch((error) => {
-                                console.error("❌ Error adding document: ", error);
                                 showToast('Error menambahkan penelitian: ' + error.message, 'error');
                             });
                     }
@@ -2002,7 +1991,6 @@
                                 showToast('Penelitian berhasil dihapus!', 'success');
                             })
                             .catch((error) => {
-                                console.error("❌ Error deleting document: ", error);
                                 showToast('Error menghapus penelitian: ' + error.message, 'error');
                             })
                             .finally(() => {
@@ -2182,7 +2170,6 @@
                     applyVlookupFilters();
                 })
                 .catch((error) => {
-                    console.error('Error loading vlookup data:', error);
                     showError('Gagal memuat data dari ' + vlookupCurrentSource + ': ' + error.message);
                     
                     if (vlookupTableBody) {
@@ -2379,7 +2366,6 @@
             
             const selectedData = vlookupData[key];
             if (!selectedData) {
-                console.error('❌ No selected data found for key:', key);
                 return;
             }
             
@@ -2409,7 +2395,6 @@
                     showToast('Data dipilih tetapi tidak memiliki link jurnal', 'warning');
                 }
             } else {
-                console.error('❌ Journal link field not found in DOM');
             }
             
             
@@ -2440,7 +2425,6 @@
         function initializeAutocompleteData() {
             
             if (!database) {
-                console.error('❌ Database not available for autocomplete');
                 // Use test data instead
                 autocompleteData = {
                     'pustakana_001': {
@@ -2555,7 +2539,6 @@
                     };
                 }
             }).catch((error) => {
-                console.error('❌ Error loading autocomplete data:', error);
                 // Use test data as fallback
                 autocompleteData = {
                     'pustakana_001': {
@@ -2633,7 +2616,6 @@
 
 
             if (!journalInput || !autocompleteDropdown) {
-                console.error('❌ Autocomplete elements not found');
                 return;
             }
 
@@ -2903,7 +2885,6 @@
                     dropdown.classList.add('hidden');
                 }
             } else {
-                console.error('❌ Dropdown element not found!');
             }
         }
 
@@ -2916,7 +2897,6 @@
 
 
             if (!selectedData) {
-                console.error('❌ No selected data found');
                 return;
             }
 
@@ -2945,7 +2925,6 @@
                     showToast('Data dipilih tetapi tidak memiliki link jurnal', 'warning');
                 }
             } else {
-                console.error('❌ Journal link field not found in DOM');
             }
 
 
@@ -3010,7 +2989,6 @@
 
         function showResearchModal(mode, key = null, data = null) {
             if (!modalTitle || !submitBtn || !researchModal) {
-                console.error('Modal elements not initialized');
                 return;
             }
             

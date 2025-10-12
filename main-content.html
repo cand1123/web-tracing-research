@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Permissions-Policy" content="unload=(), beforeunload=()">
     <title>Awur Research</title>
     <!-- Tempel gambar img.png di tampilan -->
     <link rel="icon" type="image/png" href="img.png">
@@ -1688,7 +1689,6 @@
                 // Redirect to login page
                 window.location.href = 'index.html';
             } catch (error) {
-                console.error('Error during logout:', error);
             }
         }
 
