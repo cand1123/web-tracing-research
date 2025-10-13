@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Permissions-Policy" content="unload=(), beforeunload=()">
-    <title>Pustakana</title>
+    <title>Proposal Internal</title>
     <!-- Tempel gambar img.png di tampilan -->
     <link rel="icon" type="image/png" href="img.png">
     <!-- Tailwind CSS - Production Ready -->
@@ -1939,12 +1939,17 @@
                     const formData = new FormData(researchForm);
                     const key = formData.get('edit-key');
                     
+                    // Get journal title from dataset if available
+                    const journalLinkField = document.getElementById('journal_link');
+                    const journalTitle = journalLinkField ? journalLinkField.dataset.journalTitle || '' : '';
+                    
                     const researchData = {
                         lecturer_name: formData.get('lecturer_name'),
                         title: formData.get('title'),
                         implementation_period: formData.get('implementation_period'),
                         journal_details: formData.get('journal_details') || '',
                         journal_link: formData.get('journal_link') || '',
+                        journal_title: journalTitle,
                         hki_details: formData.get('hki_details') || '',
                         hki_link: formData.get('hki_link') || '',
                         media_details: formData.get('media_details') || '',
@@ -2917,6 +2922,9 @@
                 if (journalLink) {
                     journalLinkField.value = journalLink;
                     
+                    // Store journal title for later use in display
+                    journalLinkField.dataset.journalTitle = selectedData.title || '';
+                    
                     // Trigger input event to show the change
                     journalLinkField.dispatchEvent(new Event('input', { bubbles: true }));
                 } else {
@@ -3078,7 +3086,11 @@
              if (journalDetailsField) journalDetailsField.value = data.journal_details || '';
              
              const journalLinkField = researchForm.querySelector('#journal_link');
-             if (journalLinkField) journalLinkField.value = data.journal_link || '';
+             if (journalLinkField) {
+                 journalLinkField.value = data.journal_link || '';
+                 // Store journal title in dataset for later use
+                 journalLinkField.dataset.journalTitle = data.journal_title || '';
+             }
              
              const hkiDetailsField = researchForm.querySelector('#hki_details');
              if (hkiDetailsField) hkiDetailsField.value = data.hki_details || '';
@@ -3253,7 +3265,7 @@
                     <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600 border-r border-gray-300 text-center">${value.implementation_period || ''}</td>
                     <td class="px-2 py-2 whitespace-nowrap text-xs font-medium action-column">
                         <div class="flex items-center justify-center space-x-1">
-                            <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-eye"></i></button>
+                            <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-chevron-down"></i></button>
                             <button data-key="${key}" class="fresh-button edit-btn text-gray-500" title="Edit"><i class="fas fa-pencil-alt"></i></button>
                             <button data-key="${key}" class="fresh-button delete-btn text-gray-500" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -3269,42 +3281,26 @@
                     <td colspan="4" class="px-6 py-4">
                         <div class="border border-gray-300 p-4 bg-gray-100">
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Detail Penelitian</h4>
-                            <div class="flex gap-1 justify-between">
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                            <div class="grid grid-cols-3 w-full gap-2">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Jurnal:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.journal_details || ''}</span>
-                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : ''}
+                                        <span class="font-medium text-gray-600 text-xs">Link Dokumen:</span>
+                                        ${value.doc_link ? `<a href="${value.doc_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">HKI:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.hki_details || ''}</span>
-                                        ${value.hki_link ? `<a href="${value.hki_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : ''}
+                                        <span class="font-medium text-gray-600 text-xs">Link Jurnal:</span>
+                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Media Massa:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.media_details || ''}</span>
-                                        ${value.media_link ? `<a href="${value.media_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : ''}
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Folder Kerja:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.work_folder || ''}</span>
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Total Hibah:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.total_grant ? 'Rp ' + parseInt(value.total_grant).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : ''}</span>
+                                        <span class="font-medium text-gray-600 text-xs">Link Publikasi:</span>
+                                        ${value.published?.published_link ? `<a href="${value.published.published_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
                             </div>
-                            
                             <!-- Catatan - Field Terpisah di bawah detail -->
                             <div class="mt-4">
                                 <div class="border border-gray-300 px-3 py-2 bg-gray-100">

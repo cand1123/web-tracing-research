@@ -369,6 +369,11 @@
                 height: auto;
                 min-height: auto;
             }
+        /* Hanya styling: atur grid collapse ke 3 kolom */
+        .collapse-transition > td > div > div.grid.w-full {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem; /* setara gap-2 */
+        }
             
             /* Badge styling */
             .fresh-badge {
@@ -1547,11 +1552,14 @@
                                 <label for="published_link" class="block text-xs font-medium text-gray-700">Link Publikasi</label>
                                 <input type="url" id="published_link" name="published_link" class="mt-1 block w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://journal.com/..." autocomplete="off">
                             </div>
-                            <div>
-                                <label for="notes" class="block text-xs font-medium text-gray-700">Catatan</label>
-                                <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tambahkan catatan atau keterangan tambahan..." autocomplete="off"></textarea>
-                            </div>
                         </div>
+                        
+                        <!-- Field Catatan - Terpisah -->
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <label for="notes" class="block text-xs font-medium text-gray-700 mb-2">Catatan</label>
+                            <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full px-2 py-1.5 bg-white border border-gray-300 rounded text-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tambahkan catatan atau keterangan tambahan..." autocomplete="off"></textarea>
+                        </div>
+                        
                         <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 border-t">
                             <button type="button" id="cancel-btn" class=" w-full sm:w-auto inline-flex items-center justify-center px-3 py-2 sm:py-1.5 border border-red-300 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                 Batal
@@ -2692,7 +2700,7 @@
                     </td>
                     <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600 border-r border-gray-300 text-center">${value.implementation_year || 'N/A'}</td>
                     <td class="px-3 py-3 whitespace-nowrap text-center text-xs font-medium space-x-1">
-                        <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-eye"></i></button>
+                        <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-chevron-down"></i></button>
                         <button data-key="${key}" class="fresh-button edit-btn text-gray-500" title="Edit"><i class="fas fa-pencil-alt"></i></button>
                         <button data-key="${key}" class="fresh-button delete-btn text-gray-500" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
@@ -2704,38 +2712,26 @@
                 collapseRow.id = `collapse-${key}`;
                 collapseRow.classList.add('hidden', 'bg-gray-50', 'collapse-transition');
                 collapseRow.innerHTML = `
-                    <td colspan="6" class="px-8 py-6">
+                    <td colspan="6" class="px-0 py-6">
                         <div class="border border-gray-300 p-4 bg-gray-100">
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Detail Penelitian</h4>
-                            <div class="flex gap-1 justify-between">
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Akreditasi:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.accreditation || 'N/A'}</span>
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Link Jurnal:</span>
-                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                            <div class="grid grid-cols-3 w-full">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
                                         <span class="font-medium text-gray-600 text-xs">Link Dokumen:</span>
-                                        ${value.doc_link ? `<a href="${value.doc_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
+                                        ${value.doc_link ? `<a href="${value.doc_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Tahun Publikasi:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.published?.year_published || 'N/A'}</span>
+                                        <span class="font-medium text-gray-600 text-xs">Link Jurnal:</span>
+                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
                                         <span class="font-medium text-gray-600 text-xs">Link Publikasi:</span>
-                                        ${value.published?.published_link ? `<a href="${value.published.published_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
+                                        ${value.published?.published_link ? `<a href="${value.published.published_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
                             </div>
@@ -2846,9 +2842,9 @@
                         <span class="status-text">${value.status || 'N/A'}</span>
                     </td>
                     <td class="px-3 py-3 whitespace-nowrap text-xs text-gray-600 border-r border-gray-300 text-center">${value.implementation_year || 'N/A'}</td>
-                                        <td class="px-2 py-2 whitespace-nowrap text-xs font-medium action-column">
+                    <td class="px-2 py-2 whitespace-nowrap text-xs font-medium action-column">
                         <div class="flex items-center justify-center space-x-1">
-                            <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-eye"></i></button>
+                            <button data-key="${key}" class="fresh-button view-btn text-gray-500" title="View"><i class="fas fa-chevron-down"></i></button>
                             <button data-key="${key}" class="fresh-button edit-btn text-gray-500" title="Edit"><i class="fas fa-pencil-alt"></i></button>
                             <button data-key="${key}" class="fresh-button delete-btn text-gray-500" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -2864,35 +2860,23 @@
                     <td colspan="6" class="px-6 py-4">
                         <div class="border border-gray-300 p-4 bg-gray-100">
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Detail Penelitian</h4>
-                            <div class="flex gap-1 justify-between">
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Akreditasi:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.accreditation || 'N/A'}</span>
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
-                                    <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Link Jurnal:</span>
-                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
-                                    </div>
-                                </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                            <div class="grid grid-cols-3 w-full">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
                                         <span class="font-medium text-gray-600 text-xs">Link Dokumen:</span>
-                                        ${value.doc_link ? `<a href="${value.doc_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
+                                        ${value.doc_link ? `<a href="${value.doc_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
-                                        <span class="font-medium text-gray-600 text-xs">Tahun Publikasi:</span>
-                                        <span class="text-gray-700 ml-2 text-xs">${value.published?.year_published || 'N/A'}</span>
+                                        <span class="font-medium text-gray-600 text-xs">Link Jurnal:</span>
+                                        ${value.journal_link ? `<a href="${value.journal_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
-                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[150px]">
+                                <div class="border border-gray-300 px-3 py-2 bg-gray-100 min-w-[250px]">
                                     <div class="flex items-center">
                                         <span class="font-medium text-gray-600 text-xs">Link Publikasi:</span>
-                                        ${value.published?.published_link ? `<a href="${value.published.published_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">-</span>'}
+                                        ${value.published?.published_link ? `<a href="${value.published.published_link}" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline ml-2 text-xs">[Link]</a>` : '<span class="text-gray-700 ml-2 text-xs">N/A</span>'}
                                     </div>
                                 </div>
                             </div>
