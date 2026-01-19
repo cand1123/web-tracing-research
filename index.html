@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Permissions-Policy" content="unload=(), beforeunload=()">
-    <title>Login dengan Google</title>
+    <title>Login</title>
     <link rel="icon" type="image/png" href="img.png">
     <link rel="shortcut icon" type="image/png" href="img.png">
     <script type="importmap">
@@ -20,7 +20,7 @@
     <!-- Firebase v9 CDN -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         
         // Import config
         import { firebaseConfig } from './config.js';
@@ -35,50 +35,279 @@
             auth,
             provider,
             signInWithPopup,
-            signOut
+            signOut,
+            signInAnonymously,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword
         };
     </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; /* 12px */
+            min-height: 100vh;
+            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f4f4f4;
+            background: radial-gradient(circle at top, #e0ecff 0, #f4f4f4 45%, #e5e7eb 100%);
+        }
+
+        .login-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .login-container {
+            max-width: 380px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+            padding: 1.75rem 1.75rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .login-logo {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 1.25rem;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+            object-fit: cover;
+        }
+
+        .login-title {
+            font-size: 1.125rem; /* 18px */
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-subtitle {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-google-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.7rem 1.25rem;
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            color: #374151;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .login-google-btn:hover {
+            border-color: #9ca3af;
+            background-color: #f9fafb;
+        }
+
+        .login-google-btn:active {
+            border-color: #9ca3af;
+            background-color: #f9fafb;
+        }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        .login-divider-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            align-items: stretch;
+        }
+
+        .login-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .login-input {
+            padding: 0.7rem 0.875rem;
+            padding-right: 2.5rem;
+            border-radius: 0;
+            border: 1.5px solid #e5e7eb;
+            font-size: 0.8125rem;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            border-width: 2px;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            background-color: #ffffff;
+        }
+
+        .login-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .login-label {
+            font-size: 0.6875rem;
+            text-align: left;
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+
+        .password-toggle-icon {
+            position: absolute;
+            right: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 0.875rem;
+            z-index: 10;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-toggle-icon:hover {
+            color: #4f46e5;
+        }
+
+        .password-toggle-icon:active {
+            color: #4f46e5;
+        }
+
+        .login-primary-btn {
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 0.7rem 1.25rem;
+            background: #4f46e5;
+            border: none;
+            border-radius: 999px;
+            color: #ffffff;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.35);
+        }
+
+        .login-primary-btn:hover {
+            background: #4338ca;
+        }
+
+        .login-primary-btn:active {
+            background: #4338ca;
+        }
+
+        .login-helper {
+            margin-top: 0.85rem;
+            font-size: 0.6875rem;
+            color: #9ca3af;
+        }
+
+        .login-helper span {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        #loading-indicator p {
+            font-size: 0.6875rem;
+            color: #6b7280;
+        }
+
+        #error-message {
+            font-size: 0.6875rem;
+        }
+
+        #error-text {
             margin: 0;
         }
-        .login-container {
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 2rem;
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem 1.25rem 1.25rem;
+                border-radius: 14px;
+            }
+
+            .login-logo {
+                width: 84px;
+                height: 84px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <img src="img.png" alt="PUSTAKANA Logo" style="width: 120px; height: 120px; margin-bottom: 2rem; border-radius: 50%; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);">
-        <h1>Selamat Datang!</h1>
-        <p>Silakan masuk untuk melanjutkan.</p>
-        
-        <!-- Google Sign-In dengan Firebase v9 -->
-        <button id="google-signin-btn" onclick="signInWithGoogle()" style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px 24px;
-            background: white;
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            color: #3c4043;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            min-width: 240px;
-        " onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+    <div class="login-wrapper">
+        <div class="login-container">
+            <img src="img.png" alt="PUSTAKANA Logo" class="login-logo">
+            <h1 class="login-title">Selamat Datang</h1>
+            <p class="login-subtitle">Masuk menggunakan akun Google atau username Anda.</p>
+            
+            <!-- Form Login Username + Password -->
+            <form id="username-login-form" onsubmit="loginWithUsername(event)" class="login-form">
+                <div style="width: 100%;">
+                    <label class="login-label" for="username-input">
+                        <i class="fas fa-user" style="margin-right: 0.4rem; color: #6b7280;"></i>Username
+                    </label>
+                    <div class="login-input-wrapper">
+                        <input id="username-input" type="text" placeholder="Masukkan username" required class="login-input">
+                    </div>
+                </div>
+                <div style="width: 100%;">
+                    <label class="login-label" for="password-input">
+                        <i class="fas fa-lock" style="margin-right: 0.4rem; color: #6b7280;"></i>Password
+                    </label>
+                    <div class="login-input-wrapper">
+                        <input id="password-input" type="password" placeholder="Masukkan password" required class="login-input">
+                        <span class="password-toggle-icon" id="password-toggle" onclick="togglePasswordVisibility()">
+                            <i class="fas fa-eye" id="password-eye-icon"></i>
+                        </span>
+                    </div>
+                </div>
+                <button type="submit" class="login-primary-btn">
+                    Login
+                </button>
+            </form>
+
+            <div class="login-divider">
+                <div class="login-divider-line"></div>
+                <span>atau masuk dengan username</span>
+                <div class="login-divider-line"></div>
+            </div>
+
+            <!-- Google Sign-In dengan Firebase v9 -->
+            <button id="google-signin-btn" onclick="signInWithGoogle()" class="login-google-btn">
             <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -86,16 +315,17 @@
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             Sign in with Google
-        </button>
-        
-        <!-- Loading indicator -->
-        <div id="loading-indicator" style="display: none; margin-top: 1rem;">
-            <p>Sedang memproses login...</p>
-        </div>
-        
-        <!-- Error message -->
-        <div id="error-message" style="display: none; margin-top: 1rem; color: red;">
-            <p id="error-text"></p>
+            </button>
+            
+            <!-- Loading indicator -->
+            <div id="loading-indicator" style="display: none; margin-top: 1rem;">
+                <p>Sedang memproses login...</p>
+            </div>
+            
+            <!-- Error message -->
+            <div id="error-message" style="display: none; margin-top: 0.75rem; color: #b91c1c; background: #fef2f2; border-radius: 0.5rem; padding: 0.4rem 0.6rem;">
+                <p id="error-text"></p>
+            </div>
         </div>
     </div>
 
@@ -140,8 +370,8 @@
                     picture: user.photoURL
                 }));
                 
-                // Redirect ke halaman utama
-                window.location.href = 'main-content.html';
+                // Redirect ke halaman menu
+                window.location.href = 'menu.html';
                 
             } catch (error) {
                 
@@ -178,8 +408,120 @@
             }
         }
 
-        // Make signInWithGoogle available globally
+        // Login dengan username + password (Firebase Email/Password Auth)
+        async function loginWithUsername(event) {
+            event.preventDefault();
+            hideError();
+
+            const usernameInput = document.getElementById('username-input');
+            const passwordInput = document.getElementById('password-input');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username) {
+                showError('Username wajib diisi.');
+                return;
+            }
+
+            if (!password) {
+                showError('Password wajib diisi.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showError('Password minimal 6 karakter.');
+                return;
+            }
+
+            try {
+                showLoading();
+
+                if (!window.firebaseV9 || !window.firebaseV9.signInWithEmailAndPassword || !window.firebaseV9.createUserWithEmailAndPassword) {
+                    throw new Error('Firebase v9 tidak tersedia. Periksa koneksi internet.');
+                }
+
+                const { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = window.firebaseV9;
+                
+                // Convert username to email format (Firebase requires email format)
+                const email = `${username}@awur.local`;
+                
+                let result;
+                try {
+                    // Try to sign in first
+                    result = await signInWithEmailAndPassword(auth, email, password);
+                } catch (signInError) {
+                    // If user not found, create new account
+                    if (signInError.code === 'auth/user-not-found') {
+                        result = await createUserWithEmailAndPassword(auth, email, password);
+                    } else {
+                        throw signInError;
+                    }
+                }
+
+                const user = result.user;
+
+                // Simpan data user ke sessionStorage
+                sessionStorage.setItem('google_id_token', await user.getIdToken());
+                sessionStorage.setItem('user_info', JSON.stringify({
+                    name: username,
+                    email: email,
+                    picture: ''
+                }));
+
+                // Redirect ke halaman menu
+                window.location.href = 'menu.html';
+            } catch (error) {
+                console.error(error);
+                let errorMessage = 'Gagal login. ';
+                
+                // Handle specific Firebase errors
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage += 'Format username tidak valid.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage += 'Akun pengguna dinonaktifkan.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage += 'Password salah.';
+                        break;
+                    case 'auth/email-already-in-use':
+                        errorMessage += 'Username sudah digunakan.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += 'Password terlalu lemah.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage += 'Gagal terhubung ke server. Periksa koneksi internet.';
+                        break;
+                    default:
+                        errorMessage += 'Silakan coba lagi.';
+                }
+                
+                showError(errorMessage);
+            }
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password-input');
+            const eyeIcon = document.getElementById('password-eye-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Make functions available globally
         window.signInWithGoogle = signInWithGoogle;
+        window.loginWithUsername = loginWithUsername;
+        window.togglePasswordVisibility = togglePasswordVisibility;
         // Helper functions untuk UI state management
         function showLoading() {
             document.getElementById('loading-indicator').style.display = 'block';
@@ -190,6 +532,12 @@
                 signinButton.style.opacity = '0.5';
                 signinButton.style.pointerEvents = 'none';
             }
+            // Disable username login form
+            const usernameForm = document.getElementById('username-login-form');
+            if (usernameForm) {
+                usernameForm.style.opacity = '0.5';
+                usernameForm.style.pointerEvents = 'none';
+            }
         }
 
         function hideLoading() {
@@ -199,6 +547,12 @@
             if (signinButton) {
                 signinButton.style.opacity = '1';
                 signinButton.style.pointerEvents = 'auto';
+            }
+            // Re-enable username login form
+            const usernameForm = document.getElementById('username-login-form');
+            if (usernameForm) {
+                usernameForm.style.opacity = '1';
+                usernameForm.style.pointerEvents = 'auto';
             }
         }
 
@@ -224,7 +578,7 @@
                     if (window.firebaseV9 && window.firebaseV9.auth) {
                         const currentUser = window.firebaseV9.auth.currentUser;
                         if (currentUser) {
-                            window.location.href = 'main-content.html';
+                            window.location.href = 'menu.html';
                             return true;
                         }
                     }

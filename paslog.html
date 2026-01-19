@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Manager</title>
+    <link rel="icon" type="image/png" href="img.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Konfigurasi Tailwind untuk menghilangkan warning production
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+        
+        // Suppress Tailwind production warning
+        if (typeof window !== 'undefined') {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && args[0].includes && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                    return; // Suppress this specific warning
+                }
+                originalWarn.apply(console, args);
+            };
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; /* 12px base */
+            background-color: #f3f4f6;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .masked-pass {
+            font-family: monospace;
+            letter-spacing: 3px;
+            color: #6b7280;
+        }
+        
+        .copy-icon {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            opacity: 0.5;
+            flex-shrink: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .copy-icon:hover {
+            opacity: 1;
+        }
+        
+        .copy-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #6b7280;
+        }
+        
+        span[id^="display-"], span[id^="username-"] {
+            user-select: text;
+            cursor: text;
+            display: inline-block;
+            min-width: 100px;
+            font-size: 0.6875rem; /* 11px */
+        }
+        
+        /* Filter styling */
+        .filter-select, .filter-button {
+            display: block;
+            width: 100%;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            color: #374151;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        .filter-select:focus, .filter-button:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+        
+        .filter-button {
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .filter-button:hover {
+            background-color: #f9fafb;
+        }
+        
+        .filter-dropdown {
+            position: absolute;
+            z-index: 10;
+            margin-top: 0.25rem;
+            width: 100%;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Mobile filter styles */
+        @media (max-width: 640px) {
+            .filter-select, .filter-button {
+                font-size: 0.6875rem !important; /* 11px */
+                height: 32px !important;
+                min-height: 32px !important;
+            }
+        }
+    </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "./config.js": "./config.js"
+        }
+    }
+    </script>
+    <!-- Firebase v8 SDK (Legacy) untuk Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script type="module">
+        // Import config dan set ke window untuk Firebase v8
+        import { firebaseConfig } from './config.js';
+        window.firebaseConfig = firebaseConfig;
+    </script>
+</head>
+<body class="antialiased text-gray-800">
+    <!-- Back Button Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200 py-5 px-4 flex justify-between items-center">
+        <a href="menu.html" class="inline-flex items-center text-gray-700 hover:text-indigo-600 transition-colors">
+            <i class="fas fa-arrow-left mr-2 text-sm"></i>
+            <span class="text-sm font-medium">Kembali ke Menu</span>
+        </a>
+        <button onclick="handleLogout()" class="inline-flex items-center text-red-600 hover:text-red-700 transition-colors">
+            <i class="fas fa-sign-out-alt mr-2 text-sm"></i>
+            <span class="text-sm font-medium">Logout</span>
+        </button>
+    </div>
+    
+    <div class="container mx-auto px-2 py-4 max-w-7xl">
+        <header class="mb-4 text-center relative">
+            <h1 class="font-bold text-gray-900 mb-1" style="font-size: 1.125rem;">Secure Logs</h1>
+            <p class="text-gray-600 mb-2" style="font-size: 0.75rem;">Simpan akun sosial media Anda dengan aman.</p>
+            <button class="absolute top-0 right-0 inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick="openModal()">
+                <i class="fas fa-plus mr-1 text-xs"></i>
+                <span class="hidden sm:inline">Tambah Akun</span>
+                <span class="sm:hidden">Tambah</span>
+            </button>
+        </header>
+        
+        <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+            <div class="modal-content">
+                <button class="absolute top-2 right-2 bg-gray-100 hover:bg-gray-200 border-none text-sm cursor-pointer text-gray-600 w-6 h-6 flex items-center justify-center transition-colors" onclick="closeModal()">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+                <input type="hidden" id="editId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="flex flex-col">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Platform</label>
+                        <input type="text" id="platform" placeholder="Misal: LinkedIn" class="px-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Username</label>
+                        <input type="text" id="username" placeholder="email@address.com" class="px-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="flex flex-col md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Password</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="password" placeholder="Ketik atau generate..." class="flex-1 px-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <button type="button" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-medium transition-colors" onclick="generatePass()">Generate</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Catatan</label>
+                        <textarea id="notes" rows="2" placeholder="Info tambahan (opsional)" class="px-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button id="btn-save" class="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onclick="saveData()">Simpan Akun</button>
+                    <button id="btn-cancel" class="hidden px-3 py-1.5 border border-red-300 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" onclick="cancelEdit()">Batal</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filter Section -->
+        <div class="bg-gray-50 p-3 sm:p-4 mb-4 sm:mb-6 border border-gray-200">
+            <!-- Desktop Filter (hidden on mobile) -->
+            <div class="hidden sm:flex flex-col gap-3 sm:gap-4">
+                <!-- Search Fields -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                        <label for="platform-search" class="block text-xs font-medium text-gray-700 mb-1">Search Platform</label>
+                        <input type="text" id="platform-search" placeholder="Cari berdasarkan platform..." class="filter-select" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="username-search" class="block text-xs font-medium text-gray-700 mb-1">Search Username</label>
+                        <input type="text" id="username-search" placeholder="Cari berdasarkan username..." class="filter-select" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Filter Toggle Button (visible only on mobile) -->
+        <div class="sm:hidden mb-4">
+            <button id="mobile-filter-toggle" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+                <i class="fas fa-filter"></i>
+                <span>Filter & Search</span>
+                <i class="fas fa-chevron-right" id="mobile-filter-icon"></i>
+            </button>
+        </div>
+        
+        <!-- Mobile Filter Sidebar -->
+        <div id="mobile-filter-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl translate-x-full z-50 sm:hidden">
+            <div class="flex flex-col h-full">
+                <!-- Header -->
+                <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-lg font-semibold text-gray-800">Filter & Search</h3>
+                    <button id="mobile-filter-close" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Filter Content -->
+                <div class="flex-1 p-4 space-y-4">
+                    <!-- Search Fields -->
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-medium text-gray-700 border-b border-gray-200 pb-2">Search</h4>
+                        <div>
+                            <label for="mobile-platform-search" class="block text-xs font-medium text-gray-700 mb-1">Search Platform</label>
+                            <input type="text" id="mobile-platform-search" placeholder="Cari berdasarkan platform..." class="filter-select w-full" autocomplete="off">
+                        </div>
+                        <div>
+                            <label for="mobile-username-search" class="block text-xs font-medium text-gray-700 mb-1">Search Username</label>
+                            <input type="text" id="mobile-username-search" placeholder="Cari berdasarkan username..." class="filter-select w-full" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" id="accountsGrid">
+            <div id="emptyMsg" class="col-span-full text-center py-8 text-gray-500 italic text-xs hidden">Belum ada data tersimpan.</div>
+        </div>
+    </div>
+<script>
+// Logout function
+function handleLogout() {
+    try {
+        // Clear session storage
+        sessionStorage.removeItem('google_id_token');
+        sessionStorage.removeItem('user_info');
+        
+        // Sign out from Firebase if available
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().signOut();
+        }
+        
+        // Redirect to login page
+        window.location.href = 'index.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+}
+
+window.handleLogout = handleLogout;
+
+// Firebase variables
+let database = null;
+let passwordLogsRef = null;
+let isFirebaseInitialized = false;
+let allLogs = []; // Store logs in memory
+
+// Initialize Firebase
+function initializeFirebase() {
+    try {
+        if (typeof firebase === 'undefined') {
+            alert('Firebase SDK tidak tersedia. Periksa koneksi internet.');
+            return false;
+        }
+        
+        if (!window.firebaseConfig) {
+            alert('Firebase config tidak tersedia. Periksa file config.js.');
+            return false;
+        }
+        
+        // Initialize Firebase
+        if (!firebase.apps || firebase.apps.length === 0) {
+            firebase.initializeApp(window.firebaseConfig);
+        }
+        
+        database = firebase.database();
+        passwordLogsRef = database.ref('passwordLogs');
+        isFirebaseInitialized = true;
+        
+        // Set up real-time listener
+        passwordLogsRef.on('value', (snapshot) => {
+            const firebaseData = snapshot.val();
+            if (firebaseData) {
+                allLogs = Object.values(firebaseData);
+            } else {
+                allLogs = [];
+            }
+            // Apply filters and load table
+            applyFilters();
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('Error initializing Firebase:', error);
+        alert('Gagal menginisialisasi Firebase: ' + error.message);
+        return false;
+    }
+}
+
+// Get all logs from memory (updated by Firebase listener)
+function getAllLogs() {
+    return allLogs;
+}
+
+// Save to Firebase only
+function saveToStorage(logs) {
+    if (!isFirebaseInitialized || !passwordLogsRef) {
+        alert('Firebase belum diinisialisasi. Tidak dapat menyimpan data.');
+        return;
+    }
+    
+    // Convert array to object with id as key
+    const logsObject = {};
+    logs.forEach(log => {
+        logsObject[String(log.id)] = log;
+    });
+    
+    passwordLogsRef.set(logsObject).catch(error => {
+        console.error('Error saving to Firebase:', error);
+        alert('Gagal menyimpan data ke Firebase: ' + error.message);
+    });
+}
+
+// Filter variables
+let filteredLogs = [];
+
+// Apply filters
+function applyFilters() {
+    const logs = getAllLogs();
+    const platformSearch = document.getElementById('platform-search')?.value.toLowerCase().trim() || '';
+    const usernameSearch = document.getElementById('username-search')?.value.toLowerCase().trim() || '';
+    
+    filteredLogs = logs.filter(log => {
+        let matches = true;
+        
+        // Filter by Platform
+        if (platformSearch && !log.platform?.toLowerCase().includes(platformSearch)) {
+            matches = false;
+        }
+        
+        // Filter by Username
+        if (usernameSearch && !log.user?.toLowerCase().includes(usernameSearch)) {
+            matches = false;
+        }
+        
+        return matches;
+    });
+    
+    loadTable();
+}
+
+// Setup filter event listeners
+function setupFilterListeners() {
+    // Desktop filter elements
+    const platformSearch = document.getElementById('platform-search');
+    const usernameSearch = document.getElementById('username-search');
+    
+    // Mobile filter elements
+    const mobilePlatformSearch = document.getElementById('mobile-platform-search');
+    const mobileUsernameSearch = document.getElementById('mobile-username-search');
+    
+    // Mobile filter toggle
+    const mobileFilterToggle = document.getElementById('mobile-filter-toggle');
+    const mobileFilterSidebar = document.getElementById('mobile-filter-sidebar');
+    const mobileFilterClose = document.getElementById('mobile-filter-close');
+    const mobileFilterIcon = document.getElementById('mobile-filter-icon');
+    
+    // Desktop search event listeners
+    if (platformSearch) {
+        platformSearch.addEventListener('input', applyFilters);
+    }
+    
+    if (usernameSearch) {
+        usernameSearch.addEventListener('input', applyFilters);
+    }
+    
+    // Mobile search event listeners
+    if (mobilePlatformSearch) {
+        mobilePlatformSearch.addEventListener('input', (e) => {
+            // Sync with desktop
+            if (platformSearch) {
+                platformSearch.value = e.target.value;
+            }
+            applyFilters();
+        });
+    }
+    
+    if (mobileUsernameSearch) {
+        mobileUsernameSearch.addEventListener('input', (e) => {
+            // Sync with desktop
+            if (usernameSearch) {
+                usernameSearch.value = e.target.value;
+            }
+            applyFilters();
+        });
+    }
+    
+    // Mobile filter sidebar toggle
+    if (mobileFilterToggle) {
+        mobileFilterToggle.addEventListener('click', () => {
+            mobileFilterSidebar.classList.remove('translate-x-full');
+            mobileFilterIcon.classList.remove('fa-chevron-right');
+            mobileFilterIcon.classList.add('fa-chevron-left');
+        });
+    }
+    
+    if (mobileFilterClose) {
+        mobileFilterClose.addEventListener('click', () => {
+            mobileFilterSidebar.classList.add('translate-x-full');
+            mobileFilterIcon.classList.remove('fa-chevron-left');
+            mobileFilterIcon.classList.add('fa-chevron-right');
+        });
+    }
+    
+    // Close mobile sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+        if (mobileFilterSidebar && !mobileFilterSidebar.contains(e.target) && !mobileFilterToggle.contains(e.target)) {
+            mobileFilterSidebar.classList.add('translate-x-full');
+            mobileFilterIcon.classList.remove('fa-chevron-left');
+            mobileFilterIcon.classList.add('fa-chevron-right');
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup filter listeners
+    setupFilterListeners();
+    
+    // Initialize filteredLogs with all logs initially
+    filteredLogs = getAllLogs();
+    
+    // Try to initialize Firebase
+    setTimeout(() => {
+        if (initializeFirebase()) {
+            // Table will be loaded automatically by Firebase listener
+        } else {
+            // Show empty state if Firebase fails
+            applyFilters();
+        }
+    }, 500);
+});
+
+function openModal(){document.getElementById('modalOverlay').classList.add('active')}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active');cancelEdit()}
+function generatePass(){const chars="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";let pass="";for(let i=0;i<16;i++){pass+=chars.charAt(Math.floor(Math.random()*chars.length))}document.getElementById('password').value=pass}
+function saveData(){
+    const platform=document.getElementById('platform').value;
+    const user=document.getElementById('username').value;
+    const pass=document.getElementById('password').value;
+    const notes=document.getElementById('notes').value;
+    const editId=document.getElementById('editId').value;
+    
+    if(!platform||!user||!pass){
+        alert("Mohon lengkapi Platform, Username, dan Password.");
+        return;
+    }
+    
+    let logs=getAllLogs();
+    
+    if(editId){
+        const index=logs.findIndex(log=>log.id==editId);
+        if(index!==-1){
+            logs[index].platform=platform;
+            logs[index].user=user;
+            logs[index].pass=pass;
+            logs[index].notes=notes;
+        }
+    }else{
+        const newEntry={id:Date.now(),platform,user,pass,notes};
+        logs.push(newEntry);
+    }
+    
+    saveToStorage(logs);
+    closeModal();
+    loadTable();
+}
+function editLog(id){
+    const logs=getAllLogs();
+    const log=logs.find(item=>item.id===id);
+    if(log){
+        document.getElementById('platform').value=log.platform;
+        document.getElementById('username').value=log.user;
+        document.getElementById('password').value=log.pass;
+        document.getElementById('notes').value=log.notes;
+        document.getElementById('editId').value=log.id;
+        document.getElementById('btn-save').textContent="Update Akun";
+        document.getElementById('btn-cancel').style.display="block";
+        openModal();
+    }
+}
+function cancelEdit(){
+    document.getElementById('platform').value='';
+    document.getElementById('username').value='';
+    document.getElementById('password').value='';
+    document.getElementById('notes').value='';
+    document.getElementById('editId').value='';
+    document.getElementById('btn-save').textContent="Simpan Akun";
+    document.getElementById('btn-cancel').style.display="none";
+}
+function loadTable(){
+    // Use filtered logs if filters are active, otherwise use all logs
+    const platformSearch = document.getElementById('platform-search')?.value.trim() || '';
+    const usernameSearch = document.getElementById('username-search')?.value.trim() || '';
+    const hasActiveFilters = platformSearch || usernameSearch;
+    
+    const logs = hasActiveFilters ? filteredLogs : getAllLogs();
+    const grid=document.getElementById('accountsGrid');
+    const emptyMsg=document.getElementById('emptyMsg');
+    const cards=grid.querySelectorAll('.account-card');
+    cards.forEach(card=>card.remove());
+    
+    if(logs.length===0){
+        emptyMsg.classList.remove('hidden');
+    }else{
+        emptyMsg.classList.add('hidden');
+        logs.forEach(log=>{
+            const card=document.createElement('div');
+            card.className='account-card bg-white p-3 shadow-md border border-gray-200 flex flex-col gap-2';
+            const copyIconSvg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>';
+            card.innerHTML=`
+                <div class="font-bold text-sm text-gray-900 mb-1 pb-1 border-b border-gray-200">${log.platform}</div>
+                <div class="flex flex-col gap-0.5">
+                    <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Username</div>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span id="username-${log.id}" class="text-xs text-gray-800 break-words flex-1 min-w-0">${log.user}</span>
+                        <span class="copy-icon" onclick="copyUsername(${log.id})" title="Copy username">${copyIconSvg}</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                    <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Password</div>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span id="display-${log.id}" class="text-xs masked-pass break-words flex-1 min-w-0">••••••••</span>
+                        <span class="copy-icon" onclick="copyPassword(${log.id})" title="Copy password">${copyIconSvg}</span>
+                    </div>
+                </div>
+                ${log.notes?`<div class="flex flex-col gap-0.5">
+                    <div class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Catatan</div>
+                    <div class="text-xs text-gray-600">${log.notes}</div>
+                </div>`:''}
+                <div class="flex gap-1 mt-1 pt-2 border-t border-gray-200 flex-wrap">
+                    <button class="flex-1 min-w-[60px] text-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors" onclick="toggleVisibility('${log.id}','${log.pass}',this)">Show</button>
+                    <button class="flex-1 min-w-[60px] text-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors" onclick="editLog(${log.id})">Edit</button>
+                    <button class="flex-1 min-w-[60px] text-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 transition-colors" onclick="deleteLog(${log.id})">Delete</button>
+                </div>
+            `;
+            grid.appendChild(card);
+            const displaySpan=document.getElementById(`display-${log.id}`);
+            displaySpan.addEventListener('dblclick',()=>{
+                const textToCopy=displaySpan.textContent;
+                if(textToCopy!=='••••••••'&&textToCopy!=='Copied!'){
+                    navigator.clipboard.writeText(textToCopy).then(()=>{
+                        const originalText=displaySpan.textContent;
+                        displaySpan.textContent='Copied!';
+                        setTimeout(()=>{
+                            const logs2=getAllLogs();
+                            const log2=logs2.find(item=>item.id==log.id);
+                            if(log2&&!displaySpan.classList.contains('masked-pass')){
+                                displaySpan.textContent=log2.pass;
+                            }else{
+                                displaySpan.textContent='••••••••';
+                            }
+                        },1000);
+                    });
+                }
+            });
+        });
+    }
+}
+function copyUsername(id){
+    const logs=getAllLogs();
+    const log=logs.find(item=>item.id===id);
+    if(log){
+        navigator.clipboard.writeText(log.user).then(()=>{
+            const usernameSpan=document.getElementById(`username-${id}`);
+            const originalText=usernameSpan.textContent;
+            usernameSpan.textContent='Copied!';
+            setTimeout(()=>{
+                usernameSpan.textContent=log.user;
+            },1000);
+        });
+    }
+}
+function copyPassword(id){
+    const logs=getAllLogs();
+    const log=logs.find(item=>item.id===id);
+    if(log){
+        navigator.clipboard.writeText(log.pass).then(()=>{
+            const displaySpan=document.getElementById(`display-${id}`);
+            const originalText=displaySpan.textContent;
+            displaySpan.textContent='Copied!';
+            setTimeout(()=>{
+                if(!displaySpan.classList.contains('masked-pass')){
+                    displaySpan.textContent=log.pass;
+                }else{
+                    displaySpan.textContent='••••••••';
+                }
+            },1000);
+        });
+    }
+}
+function toggleVisibility(id,realPass,btn){
+    const displaySpan=document.getElementById(`display-${id}`);
+    if(displaySpan.classList.contains('masked-pass')){
+        displaySpan.textContent=realPass;
+        displaySpan.classList.remove('masked-pass');
+        displaySpan.classList.add('text-gray-800');
+        btn.textContent="Hide";
+    }else{
+        displaySpan.textContent='••••••••';
+        displaySpan.classList.add('masked-pass');
+        displaySpan.classList.remove('text-gray-800');
+        btn.textContent="Show";
+    }
+}
+function deleteLog(id){
+    if(confirm("Hapus log ini?")){
+        let logs=getAllLogs();
+        logs=logs.filter(log=>log.id!==id);
+        saveToStorage(logs);
+        const currentEditId=document.getElementById('editId').value;
+        if(currentEditId==id){
+            closeModal();
+        }
+        loadTable();
+    }
+}
+</script>
+</body>
+</html>
